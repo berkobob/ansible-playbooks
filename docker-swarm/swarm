@@ -17,7 +17,7 @@
   - name: install docker
     command: sh /home/pi/get-docker.sh 
 
-  - name: create docker user
+  - name: add pi user to docker group
     user: 
       name: pi
       groups: docker
