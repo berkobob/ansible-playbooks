@@ -1,0 +1,81 @@
+---
+
+- hosts: all
+  become: true
+  tasks:
+  
+  - name: change host name
+    hostname:
+      name: "{{ name }}"
+
+  - name: change pi password
+    user:
+      name: pi
+      password: "{{ password }}"
+
+  - name: update repository index
+    tags: always
+    apt:
+      update_cache: yes
+      upgrade: dist
+      autoclean: yes
+      autoremove: yes
+      purge: yes
+
+    #Update
+  - name: Update raspi-config itself
+    become: true
+    apt: name=raspi-config update_cache=yes state=present cache_valid_time=3600
+
+    #Get some basic info
+  - name: Get Raspberry Pi type
+    shell: "raspi-config nonint get_pi_type"
+    register: pi_type
+    changed_when: False
+
+  - name: Show pi version
+    debug:
+      msg: "Pi version: {{ pi_type.stdout }}"
+
+  - name: Set GPU memory split
+    shell: "raspi-config nonint do_memory_split 16"
+
+    #A1 Expand Filesystem
+  - name: Check if FS is expandable
+    shell: "raspi-config nonint get_can_expand"
+    register: fs_filled
+    changed_when: False
+
+  - name: Print if FS is expandable or not
+    debug:
+      msg: "Filesystem is expandable! [{{ fs_filled.stdout }}]"
+    when: fs_filled.stdout == '0'
+
+  - name: Expand Filesystem
+    shell: "raspi-config nonint do_expand_rootfs"
+
+  #B1 Desktop / CLI
+  - name: Get boot CLI
+    shell: "raspi-config nonint get_boot_cli"
+    register: boot_cli
+    changed_when: False
+
+  - name: Print boot CLI
+    debug: 
+      msg: "Boot CLI is: {{ boot_cli.stdout }}"
+
+  - name: Get boot autologin
+    shell: "raspi-config nonint get_autologin"
+    register: auto_login
+    changed_when: False
+
+  - name: Print boot autologin status
+    debug: 
+      msg: "Boot autologin is: {{ auto_login.stdout }}"
+
+  #B1 cli, B2 cli autologin, B3 desktop, B4 desktop autologin
+  - name: Set Boot behaviour
+    shell: "raspi-config nonint do_boot_behaviour B1"
+
+#  - name: reoot
+#    reboot:

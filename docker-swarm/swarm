@@ -1,0 +1,24 @@
+---
+
+- hosts: all
+  become: true
+  tasks:
+
+  - name: update repo index
+    apt:
+      update_cache: yes
+      upgrade: dist
+
+  - name: download docker
+    get_url:
+      url: https://get.docker.com
+      dest: /home/pi/get-docker.sh
+
+  - name: install docker
+    command: sh /home/pi/get-docker.sh 
+
+  - name: create docker user
+    user: 
+      name: pi
+      groups: docker
+      append: yes
